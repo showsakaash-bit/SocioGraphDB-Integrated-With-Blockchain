@@ -1,19 +1,18 @@
 import warnings
 import requests
-from pysui import SuiConfig, SyncClient
-from pysui.sui.sui_txn import SyncTransaction
-from pysui.sui.sui_types import SuiString, SuiInteger, SuiAddress
-from pysui.sui.sui_crypto import gen_mnemonic_phrase, recover_key_and_address
-from pysui.abstracts.client_keypair import SignatureScheme
 from config import SUI_RPC_URL
 
-#PYSUI IMPORTS
+# Suppress warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-
-# WEB3 / CRYPTO FUNCTIONS
+from pysui import SuiConfig, SyncClient
+from pysui.sui.sui_txn import SyncTransaction
+from pysui.sui.sui_types import SuiInteger, SuiAddress
+from pysui.sui.sui_crypto import gen_mnemonic_phrase, recover_key_and_address
+from pysui.abstracts.client_keypair import SignatureScheme
 
 def generate_new_wallet():
+    """Generates a new Sui wallet."""
     mnemonic = gen_mnemonic_phrase(12)
     derivation_path = "m/44'/784'/0'/0'/0'"
     mnem, keypair, address = recover_key_and_address(
@@ -24,6 +23,7 @@ def generate_new_wallet():
     return str(address), keypair.serialize(), mnemonic
 
 def get_sui_balance(address: str):
+    """Gets SUI balance for an address."""
     try:
         cfg = SuiConfig.user_config(prv_keys=[], rpc_url=SUI_RPC_URL)
         client = SyncClient(cfg)
@@ -32,10 +32,11 @@ def get_sui_balance(address: str):
             total_mist = sum(int(obj.balance) for obj in result.result_data.data)
             return total_mist / 1_000_000_000
         return 0.0
-    except Exception as e:
+    except Exception:
         return 0.0
 
 def send_sui_payment(sender_priv_key: str, recipient_addr: str, amount_sui: float):
+    """Sends SUI payment."""
     amount_mist = int(amount_sui * 1_000_000_000)
     try:
         cfg = SuiConfig.user_config(prv_keys=[sender_priv_key], rpc_url=SUI_RPC_URL)
@@ -53,10 +54,11 @@ def send_sui_payment(sender_priv_key: str, recipient_addr: str, amount_sui: floa
         return False, str(e)
     
 def get_sui_market_data():
+    """Fetches current SUI price."""
     try:
-        url = "https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd&include_24h_change=true"
+        url = "https://api.binance.com/api/v3/ticker/24hr?symbol=SUIUSDT"
         response = requests.get(url, timeout=5)
         data = response.json()
-        return data['sui']['usd'], data['sui']['usd_24h_change']
+        return float(data['lastPrice']), float(data['priceChangePercent'])
     except:
         return 1.56, 2.22
